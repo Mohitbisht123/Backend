@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken";
-import bcrypt, { hash } from "bcrypt";
+import bcrypt from "bcrypt";
 
 const userSchema = new Schema(
   {
@@ -11,7 +11,7 @@ const userSchema = new Schema(
       },
     ],
 
-    username: {
+    userame: {
       type: String,
       required: true,
       unique: true,
@@ -42,6 +42,7 @@ const userSchema = new Schema(
 
     coverImage: {
       type: String,
+      default: "",
     },
 
     password: {
@@ -58,23 +59,25 @@ const userSchema = new Schema(
   }
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+// Hash password before saving
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
   this.password = await bcrypt.hash(this.password, 10);
-  next();
 });
 
+// Compare entered password with hashed password
 userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
+// Generate Access Token
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
-      username: this.username,
+      userame: this.userame,
       fullName: this.fullName,
     },
     process.env.ACCESS_TOKEN_SECRET,
@@ -84,12 +87,13 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-userSchema.methods.generateRefreshTOken = function () {
+// Generate Refresh Token
+userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
       _id: this._id,
       email: this.email,
-      username: this.username,
+      userame: this.userame,
       fullName: this.fullName,
     },
     process.env.REFRESH_TOKEN_SECRET,
@@ -100,6 +104,3 @@ userSchema.methods.generateRefreshTOken = function () {
 };
 
 export const User = mongoose.model("User", userSchema);
- 
-
-
